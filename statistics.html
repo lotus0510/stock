@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交易統計 - 股票資金流向</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .nav {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: bold;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .nav a:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .nav a.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card h3 {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .stat-card .value.positive {
+            color: #28a745;
+        }
+
+        .stat-card .value.negative {
+            color: #dc3545;
+        }
+
+        .stat-card .subtext {
+            color: #6c757d;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-top: 20px;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tbody tr {
+            transition: all 0.3s;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .amount-positive {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .amount-negative {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            th, td {
+                padding: 8px;
+                font-size: 12px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>股票資金流向記錄</h1>
+            <p>交易統計與分析</p>
+        </div>
+
+        <div class="nav">
+            <a href="stock-tracker.html">交易記錄</a>
+            <a href="statistics.html" class="active">統計分析</a>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>整體統計</h2>
+                <div class="stats-grid" id="overallStats">
+                    <div class="empty-state">載入中...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>股票目前庫存</h2>
+                <div id="stockInventory">
+                    <div class="empty-state">載入中...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>股票統計</h2>
+                <div id="stockStats">
+                    <div class="empty-state">載入中...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>帳戶資金流向</h2>
+                <div id="accountStats">
+                    <div class="empty-state">載入中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let transactions = [];
+
+        // 從外部 JSON 檔案載入資料
+        async function loadTransactions() {
+            try {
+                const response = await fetch('transactions.json');
+                if (!response.ok) {
+                    throw new Error('無法載入資料檔案');
+                }
+                transactions = await response.json();
+                calculateStatistics();
+            } catch (error) {
+                console.error('載入資料時發生錯誤:', error);
+                document.getElementById('overallStats').innerHTML =
+                    '<div class="error-message">無法載入交易記錄。請確認 transactions.json 檔案存在且格式正確。<br>錯誤訊息: ' + error.message + '</div>';
+            }
+        }
+
+        // 計算統計資料
+        function calculateStatistics() {
+            // 整體統計
+            const overallStats = {
+                totalBuy: 0,
+                totalSell: 0,
+                totalDividend: 0,
+                netProfit: 0,
+                transactionCount: transactions.length,
+                currentBalance: 0
+            };
+
+            // 股票統計
+            const stockStats = {};
+
+            // 股票庫存
+            const stockInventory = {};
+
+            // 帳戶統計
+            const accountFlow = {};
+
+            // 按時間排序計算
+            const sortedTransactions = [...transactions].sort((a, b) =>
+                new Date(a.date) - new Date(b.date)
+            );
+
+            let balance = 0;
+
+            sortedTransactions.forEach(t => {
+                // 整體統計
+                if (t.type === 'buy') {
+                    overallStats.totalBuy += t.amount;
+                    balance += t.amount;
+
+                    // 帳戶流向 - 動態建立帳戶
+                    if (t.from) {
+                        if (!accountFlow[t.from]) accountFlow[t.from] = { in: 0, out: 0 };
+                        accountFlow[t.from].out += t.amount;
+                    }
+                    if (t.to) {
+                        if (!accountFlow[t.to]) accountFlow[t.to] = { in: 0, out: 0 };
+                        accountFlow[t.to].in += t.amount;
+                    }
+                } else if (t.type === 'sell') {
+                    overallStats.totalSell += t.amount;
+                    balance -= t.amount;
+
+                    // 帳戶流向 - 動態建立帳戶
+                    if (t.from) {
+                        if (!accountFlow[t.from]) accountFlow[t.from] = { in: 0, out: 0 };
+                        accountFlow[t.from].out += t.amount;
+                    }
+                    if (t.to) {
+                        if (!accountFlow[t.to]) accountFlow[t.to] = { in: 0, out: 0 };
+                        accountFlow[t.to].in += t.amount;
+                    }
+                } else if (t.type === 'dividend') {
+                    overallStats.totalDividend += t.amount;
+                    balance += t.amount;
+                }
+
+                // 股票統計
+                if (t.stockCode && t.stockCode !== '-') {
+                    if (!stockStats[t.stockCode]) {
+                        stockStats[t.stockCode] = {
+                            buyAmount: 0,
+                            sellAmount: 0,
+                            dividend: 0,
+                            netProfit: 0
+                        };
+                    }
+
+                    if (t.type === 'buy') {
+                        stockStats[t.stockCode].buyAmount += t.amount;
+                    } else if (t.type === 'sell') {
+                        stockStats[t.stockCode].sellAmount += t.amount;
+                    } else if (t.type === 'dividend') {
+                        stockStats[t.stockCode].dividend += t.amount;
+                    }
+
+                    // 股票庫存計算
+                    if (!stockInventory[t.stockCode]) {
+                        stockInventory[t.stockCode] = {
+                            invested: 0,  // 投入成本
+                            returned: 0,  // 賣出回收
+                            dividend: 0,  // 資本利得
+                            balance: 0    // 目前餘額
+                        };
+                    }
+
+                    if (t.type === 'buy') {
+                        stockInventory[t.stockCode].invested += t.amount;
+                        stockInventory[t.stockCode].balance += t.amount;
+                    } else if (t.type === 'sell') {
+                        stockInventory[t.stockCode].returned += t.amount;
+                        stockInventory[t.stockCode].balance -= t.amount;
+                    } else if (t.type === 'dividend') {
+                        stockInventory[t.stockCode].dividend += t.amount;
+                        stockInventory[t.stockCode].balance += t.amount;
+                    }
+                }
+            });
+
+            // 計算每支股票的淨損益
+            Object.keys(stockStats).forEach(stock => {
+                const stats = stockStats[stock];
+                stats.netProfit = stats.sellAmount - stats.buyAmount + stats.dividend;
+            });
+
+            overallStats.netProfit = overallStats.totalSell - overallStats.totalBuy + overallStats.totalDividend;
+            overallStats.currentBalance = balance;
+
+            renderStatistics(overallStats, stockStats, stockInventory, accountFlow);
+        }
+
+        // 顯示統計資料
+        function renderStatistics(overallStats, stockStats, stockInventory, accountFlow) {
+            // 整體統計
+            const overallHTML = `
+                <div class="stat-card">
+                    <h3>總交易筆數</h3>
+                    <div class="value">${overallStats.transactionCount}</div>
+                    <div class="subtext">筆</div>
+                </div>
+                <div class="stat-card">
+                    <h3>總買入金額</h3>
+                    <div class="value negative">NT$ ${overallStats.totalBuy.toLocaleString()}</div>
+                    <div class="subtext">投入成本</div>
+                </div>
+                <div class="stat-card">
+                    <h3>總賣出金額</h3>
+                    <div class="value positive">NT$ ${overallStats.totalSell.toLocaleString()}</div>
+                    <div class="subtext">回收資金</div>
+                </div>
+                <div class="stat-card">
+                    <h3>資本利得總計</h3>
+                    <div class="value ${overallStats.totalDividend >= 0 ? 'positive' : 'negative'}">NT$ ${overallStats.totalDividend.toLocaleString()}</div>
+                    <div class="subtext">股利/利得/利損</div>
+                </div>
+                <div class="stat-card">
+                    <h3>淨損益</h3>
+                    <div class="value ${overallStats.netProfit >= 0 ? 'positive' : 'negative'}">NT$ ${overallStats.netProfit.toLocaleString()}</div>
+                    <div class="subtext">賣出 - 買入 + 利得</div>
+                </div>
+                <div class="stat-card">
+                    <h3>總證券戶餘額</h3>
+                    <div class="value ${overallStats.currentBalance >= 0 ? 'positive' : 'negative'}">NT$ ${overallStats.currentBalance.toLocaleString()}</div>
+                    <div class="subtext">當前餘額</div>
+                </div>
+            `;
+
+            document.getElementById('overallStats').innerHTML = overallHTML;
+
+            // 股票庫存表格（只顯示餘額 > 0 的股票）
+            const stockInventoryArray = Object.entries(stockInventory)
+                .map(([stock, inv]) => ({
+                    stock,
+                    ...inv
+                }))
+                .filter(s => s.balance > 0)  // 只顯示仍有持股的
+                .sort((a, b) => b.balance - a.balance);  // 按餘額排序
+
+            const inventoryHTML = stockInventoryArray.length > 0 ? `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>股票代碼</th>
+                            <th>投入成本</th>
+                            <th>已回收</th>
+                            <th>資本利得</th>
+                            <th>目前餘額</th>
+                            <th>未實現損益</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${stockInventoryArray.map(s => {
+                            const unrealizedProfit = s.balance - s.invested + s.returned;
+                            const unrealizedClass = unrealizedProfit >= 0 ? 'amount-positive' : 'amount-negative';
+
+                            return `
+                                <tr>
+                                    <td><strong>${s.stock}</strong></td>
+                                    <td class="amount-negative">NT$ ${s.invested.toLocaleString()}</td>
+                                    <td class="amount-positive">NT$ ${s.returned.toLocaleString()}</td>
+                                    <td class="${s.dividend >= 0 ? 'amount-positive' : 'amount-negative'}">NT$ ${s.dividend.toLocaleString()}</td>
+                                    <td><strong style="color: #667eea;">NT$ ${s.balance.toLocaleString()}</strong></td>
+                                    <td class="${unrealizedClass}">NT$ ${unrealizedProfit.toLocaleString()}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            ` : '<div class="empty-state">目前無持有任何股票</div>';
+
+            document.getElementById('stockInventory').innerHTML = inventoryHTML;
+
+            // 股票統計表格
+            const stockStatsArray = Object.entries(stockStats).map(([stock, stats]) => ({
+                stock,
+                ...stats
+            })).sort((a, b) => b.netProfit - a.netProfit);
+
+            const stockTableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>股票代碼</th>
+                            <th>買入金額</th>
+                            <th>賣出金額</th>
+                            <th>資本利得</th>
+                            <th>淨損益</th>
+                            <th>投資報酬率</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${stockStatsArray.map(s => {
+                            const roi = s.buyAmount > 0 ? ((s.netProfit / s.buyAmount) * 100).toFixed(2) : 0;
+                            const roiClass = roi >= 0 ? 'amount-positive' : 'amount-negative';
+                            const profitClass = s.netProfit >= 0 ? 'amount-positive' : 'amount-negative';
+
+                            return `
+                                <tr>
+                                    <td><strong>${s.stock}</strong></td>
+                                    <td class="amount-negative">NT$ ${s.buyAmount.toLocaleString()}</td>
+                                    <td class="amount-positive">NT$ ${s.sellAmount.toLocaleString()}</td>
+                                    <td class="${s.dividend >= 0 ? 'amount-positive' : 'amount-negative'}">NT$ ${s.dividend.toLocaleString()}</td>
+                                    <td class="${profitClass}">NT$ ${s.netProfit.toLocaleString()}</td>
+                                    <td class="${roiClass}">${roi}%</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('stockStats').innerHTML = stockTableHTML;
+
+            // 帳戶資金流向
+            const accountHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>帳戶名稱</th>
+                            <th>流入金額</th>
+                            <th>流出金額</th>
+                            <th>淨流向</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.entries(accountFlow).map(([account, flow]) => {
+                            const net = flow.in - flow.out;
+                            const netClass = net >= 0 ? 'amount-positive' : 'amount-negative';
+
+                            return `
+                                <tr>
+                                    <td><strong>${account}</strong></td>
+                                    <td class="amount-positive">NT$ ${flow.in.toLocaleString()}</td>
+                                    <td class="amount-negative">NT$ ${flow.out.toLocaleString()}</td>
+                                    <td class="${netClass}">NT$ ${net.toLocaleString()}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('accountStats').innerHTML = accountHTML;
+        }
+
+        // 初始化：載入資料
+        loadTransactions();
+    </script>
+</body>
+</html>

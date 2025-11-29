@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票資金流向記錄</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .nav {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: bold;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .nav a:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .nav a.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .filters {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-filter {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-filter:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-reset {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #5a6268;
+        }
+
+        .records-section {
+            padding: 30px;
+        }
+
+        .records-section h2 {
+            margin-bottom: 20px;
+            color: #495057;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tbody tr {
+            transition: all 0.3s;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+            transform: scale(1.01);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .type-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+        }
+
+        .type-badge.buy {
+            background: #28a745;
+        }
+
+        .type-badge.sell {
+            background: #dc3545;
+        }
+
+        .type-badge.dividend {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .amount-positive {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .amount-negative {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .stock-code {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            th, td {
+                padding: 8px;
+                font-size: 12px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>股票資金流向記錄</h1>
+            <p>追蹤您的股票帳戶交易紀錄</p>
+        </div>
+
+        <div class="nav">
+            <a href="stock-tracker.html" class="active">交易記錄</a>
+            <a href="statistics.html">統計分析</a>
+        </div>
+
+        <div class="filters">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="stockFilter">股票代碼</label>
+                    <select id="stockFilter">
+                        <option value="">全部股票</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="brokerFilter">證券商</label>
+                    <select id="brokerFilter">
+                        <option value="">全部證券商</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="typeFilter">交易類型</label>
+                    <select id="typeFilter">
+                        <option value="">全部類型</option>
+                        <option value="buy">買入</option>
+                        <option value="sell">賣出</option>
+                        <option value="dividend">資本利得</option>
+                    </select>
+                </div>
+
+                <div class="btn-group">
+                    <button class="filter-btn btn-filter" onclick="applyFilters()">篩選</button>
+                    <button class="filter-btn btn-reset" onclick="resetFilters()">重置</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="records-section">
+            <h2>交易記錄 <span id="recordCount" style="color: #6c757d; font-size: 0.8em;"></span></h2>
+            <div id="tableContainer">
+                <div class="empty-state">載入中...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let transactions = [];
+        let filteredTransactions = [];
+
+        // 從外部 JSON 檔案載入資料
+        async function loadTransactions() {
+            try {
+                const response = await fetch('transactions.json');
+                if (!response.ok) {
+                    throw new Error('無法載入資料檔案');
+                }
+                transactions = await response.json();
+                filteredTransactions = [...transactions];
+                populateFilters();
+                renderTransactions();
+            } catch (error) {
+                console.error('載入資料時發生錯誤:', error);
+                document.getElementById('tableContainer').innerHTML =
+                    '<div class="error-message">無法載入交易記錄。請確認 transactions.json 檔案存在且格式正確。<br>錯誤訊息: ' + error.message + '</div>';
+            }
+        }
+
+        // 填充篩選器選項
+        function populateFilters() {
+            // 股票代碼
+            const stocks = [...new Set(transactions.map(t => t.stockCode).filter(s => s))].sort();
+            const stockFilter = document.getElementById('stockFilter');
+            stocks.forEach(stock => {
+                const option = document.createElement('option');
+                option.value = stock;
+                option.textContent = stock;
+                stockFilter.appendChild(option);
+            });
+
+            // 證券商（從 from 和 to 欄位收集，排除總證券戶）
+            const brokers = [...new Set(
+                transactions.flatMap(t => [t.from, t.to])
+                    .filter(b => b && b !== '' && b !== '總證券戶')
+            )].sort();
+
+            const brokerFilter = document.getElementById('brokerFilter');
+            brokers.forEach(broker => {
+                const option = document.createElement('option');
+                option.value = broker;
+                option.textContent = broker;
+                brokerFilter.appendChild(option);
+            });
+        }
+
+        // 套用篩選
+        function applyFilters() {
+            const stockFilter = document.getElementById('stockFilter').value;
+            const brokerFilter = document.getElementById('brokerFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+
+            filteredTransactions = transactions.filter(transaction => {
+                let matches = true;
+
+                if (stockFilter && transaction.stockCode !== stockFilter) {
+                    matches = false;
+                }
+
+                if (brokerFilter && transaction.from !== brokerFilter && transaction.to !== brokerFilter) {
+                    matches = false;
+                }
+
+                if (typeFilter && transaction.type !== typeFilter) {
+                    matches = false;
+                }
+
+                return matches;
+            });
+
+            renderTransactions();
+        }
+
+        // 重置篩選
+        function resetFilters() {
+            document.getElementById('stockFilter').value = '';
+            document.getElementById('brokerFilter').value = '';
+            document.getElementById('typeFilter').value = '';
+            filteredTransactions = [...transactions];
+            renderTransactions();
+        }
+
+        // 顯示交易記錄
+        function renderTransactions() {
+            const container = document.getElementById('tableContainer');
+            const recordCount = document.getElementById('recordCount');
+
+            if (transactions.length === 0) {
+                container.innerHTML = '<div class="empty-state">尚無交易記錄</div>';
+                recordCount.textContent = '';
+                return;
+            }
+
+            if (filteredTransactions.length === 0) {
+                container.innerHTML = '<div class="empty-state">查無符合條件的交易記錄</div>';
+                recordCount.textContent = '(0 筆)';
+                return;
+            }
+
+            // 更新記錄數量
+            recordCount.textContent = `(共 ${filteredTransactions.length} 筆)`;
+
+            // 按日期排序（舊的在上，用於計算餘額）
+            const sortedTransactions = [...filteredTransactions].sort((a, b) =>
+                new Date(a.date) - new Date(b.date)
+            );
+
+            // 計算每筆交易後的餘額
+            let balance = 0;
+            sortedTransactions.forEach(t => {
+                if (t.type === 'buy') {
+                    // 買入：新光→總證券戶，總證券戶增加
+                    balance += t.amount;
+                } else if (t.type === 'sell') {
+                    // 賣出：總證券戶→新光，總證券戶減少
+                    balance -= t.amount;
+                } else if (t.type === 'dividend') {
+                    // 資本利得/利損
+                    balance += t.amount;
+                }
+                t.balance = balance;
+            });
+
+            // 反轉順序，最新的在上
+            sortedTransactions.reverse();
+
+            const typeText = {
+                'buy': '買入',
+                'sell': '賣出',
+                'dividend': '股利/資本利得'
+            };
+
+            const tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>類型</th>
+                            <th>股票代碼</th>
+                            <th>來源</th>
+                            <th>目的</th>
+                            <th>金額</th>
+                            <th>總證券戶餘額</th>
+                            <th>備註</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sortedTransactions.map(t => {
+                            const amountClass = t.amount > 0 ? 'amount-positive' : (t.amount < 0 ? 'amount-negative' : '');
+                            const amountDisplay = t.amount !== 0 ? `NT$ ${t.amount.toLocaleString()}` : '-';
+                            const balanceClass = t.balance > 0 ? 'amount-positive' : (t.balance < 0 ? 'amount-negative' : '');
+
+                            return `
+                                <tr>
+                                    <td>${t.date}</td>
+                                    <td><span class="type-badge ${t.type}">${typeText[t.type]}</span></td>
+                                    <td><span class="stock-code">${t.stockCode || '-'}</span></td>
+                                    <td>${t.from || '-'}</td>
+                                    <td>${t.to || '-'}</td>
+                                    <td class="${amountClass}">${amountDisplay}</td>
+                                    <td class="${balanceClass}"><strong>NT$ ${t.balance.toLocaleString()}</strong></td>
+                                    <td>${t.note || '-'}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = tableHTML;
+        }
+
+        // 初始化：載入資料
+        loadTransactions();
+    </script>
+</body>
+</html>
